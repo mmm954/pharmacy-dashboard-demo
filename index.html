@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Коммерческая аналитика аптечных разговоров</title>
+  <style>
+    :root{
+      --bg:#081018;
+      --bg2:#0d1722;
+      --card:#111d2a;
+      --card2:#142233;
+      --line:#243447;
+      --text:#eaf2ff;
+      --muted:#8fa3b8;
+      --muted2:#6f8295;
+      --red:#ff5d66;
+      --red2:#ff8a90;
+      --green:#23d18b;
+      --green2:#74e3b6;
+      --amber:#f6c453;
+      --blue:#6ab7ff;
+      --pill:#17283a;
+      --shadow:0 18px 40px rgba(0,0,0,.28);
+      --radius:22px;
+      --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 8% -5%, rgba(38,107,174,.26), transparent 34%), radial-gradient(circle at 100% 0%, rgba(20,170,114,.16), transparent 30%), var(--bg); color:var(--text); font-family:var(--font); min-height:100vh;}
+    .topbar{position:sticky;top:0;z-index:100;background:rgba(8,16,24,.92);backdrop-filter: blur(16px);border-bottom:1px solid rgba(255,255,255,.08);}
+    .top-inner{max-width:1480px;margin:0 auto;padding:16px 22px 14px;}
+    .brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:14px}
+    .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);font-weight:700;margin-bottom:6px}
+    h1{font-size:24px;line-height:1.1;margin:0;font-weight:800;}
+    .update{font-size:12px;color:var(--muted);text-align:right;line-height:1.45;white-space:nowrap;}
+    .filters{display:grid;grid-template-columns:repeat(7, minmax(120px, 1fr)) auto;gap:10px;align-items:end;}
+    .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+    select, button{width:100%;border:1px solid rgba(255,255,255,.1);background:#0f1c29;color:var(--text);border-radius:12px;padding:10px 10px;font-size:13px;outline:none;min-height:40px;}
+    select:focus{border-color:rgba(106,183,255,.7);box-shadow:0 0 0 3px rgba(106,183,255,.12)}
+    button{cursor:pointer;background:#19283a;color:#d8e8ff;font-weight:700;white-space:nowrap;}
+    button:hover{background:#21344a}
+    .wrap{max-width:1480px;margin:0 auto;padding:22px;}
+    .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch;margin-bottom:18px;}
+    .panel{border-radius:var(--radius);background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)), var(--card);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);overflow:hidden;}
+    .panel-head{padding:22px 22px 10px;border-bottom:1px solid rgba(255,255,255,.06);}
+    .panel-head.lost{background:linear-gradient(135deg, rgba(255,93,102,.14), transparent 55%)}
+    .panel-head.saved{background:linear-gradient(135deg, rgba(35,209,139,.14), transparent 55%)}
+    .title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+    .panel-title{font-size:20px;font-weight:800;margin:0 0 7px;}
+    .sub{font-size:13px;color:var(--muted);line-height:1.45;margin:0;}
+    .big-num{font-size:42px;line-height:1;font-weight:900;letter-spacing:-.04em;margin-top:16px;}
+    .lost .big-num, .red{color:var(--red2)}
+    .saved .big-num, .green{color:var(--green2)}
+    .mini-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+    .mini{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:10px 12px;min-height:68px;}
+    .mini-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted2);font-weight:800;margin-bottom:7px;}
+    .mini-value{font-size:18px;font-weight:850;}
+    .mini-foot{font-size:12px;color:var(--muted);margin-top:4px;}
+    .delta.good{color:var(--green2)} .delta.bad{color:var(--red2)} .delta.neutral{color:var(--muted)}
+    .panel-body{padding:18px 22px 22px;}
+    .section-title{display:flex;align-items:center;justify-content:space-between;margin:0 0 14px;gap:10px;}
+    .section-title h3{margin:0;font-size:15px;font-weight:850;}
+    .section-title span{font-size:12px;color:var(--muted);}
+    .bar-list{display:flex;flex-direction:column;gap:12px;}
+    .bar-row{display:grid;grid-template-columns:minmax(150px, 250px) 1fr 92px;gap:14px;align-items:center;}
+    .bar-label{font-size:13px;font-weight:750;line-height:1.25;color:#dfeaff;}
+    .bar-track{height:12px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;}
+    .bar-fill{height:100%;border-radius:999px;transition:width .35s ease;}
+    .bar-fill.lost{background:linear-gradient(90deg, #ff5d66, #ff9aa0)}
+    .bar-fill.saved{background:linear-gradient(90deg, #1ec77f, #8bf0c4)}
+    .bar-value{font-size:13px;text-align:right;color:#e9f2ff;font-weight:800;white-space:nowrap;}
+    .base-line{display:none;}
+    .cards-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:18px;}
+    .card{border-radius:var(--radius);background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.012)), var(--card);border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);padding:20px 22px;overflow:hidden;}
+    .card h2{font-size:17px;margin:0 0 6px;font-weight:900;}
+    .card p{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.45;}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px;font-size:13px;}
+    th{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.045em;text-align:left;font-weight:850;padding:0 10px 4px;white-space:nowrap;}
+    td{background:rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);padding:11px 10px;vertical-align:middle;}
+    td:first-child{border-left:1px solid rgba(255,255,255,.06);border-radius:12px 0 0 12px;}
+    td:last-child{border-right:1px solid rgba(255,255,255,.06);border-radius:0 12px 12px 0;}
+    .product-name{font-weight:850;color:#fff;line-height:1.25;}
+    .product-cat{font-size:12px;color:var(--muted);margin-top:3px;}
+    .num{text-align:right;white-space:nowrap;font-weight:800;}
+    .pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:var(--pill);border:1px solid rgba(255,255,255,.08);padding:5px 9px;color:#d8e8ff;font-size:12px;font-weight:750;white-space:nowrap;}
+    .pill.red{background:rgba(255,93,102,.11);border-color:rgba(255,93,102,.24);color:#ffd2d5}
+    .pill.green{background:rgba(35,209,139,.11);border-color:rgba(35,209,139,.24);color:#d5ffee}
+    .pill.amber{background:rgba(246,196,83,.11);border-color:rgba(246,196,83,.24);color:#ffe9a8}
+    .behavior{display:flex;flex-direction:column;gap:14px;}
+    .metric-row{display:grid;grid-template-columns:1fr 72px;gap:14px;align-items:center;}
+    .metric-title{font-size:13px;font-weight:800;color:#eaf2ff;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;}
+    .target{color:var(--muted);font-size:12px;font-weight:700;}
+    .progress{height:10px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;}
+    .progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg, #6ab7ff, #93d2ff);transition:width .35s ease;}
+    .metric-value{text-align:right;font-size:16px;font-weight:900;}
+    .footer-debug{display:none;}
+    .table-wrap{overflow:auto;}
+    .mobile-hint{display:none;color:var(--muted);font-size:12px;margin-top:-6px;margin-bottom:10px;}
+    @media (max-width: 1100px){.filters{grid-template-columns:repeat(4, minmax(120px,1fr));}.cards-grid{grid-template-columns:1fr}.main-grid{grid-template-columns:1fr}.big-num{font-size:38px}.bar-row{grid-template-columns:minmax(145px,220px) 1fr 86px}}
+    @media (max-width: 720px){.top-inner{padding:14px 14px}.wrap{padding:14px}.brand-row{display:block}.update{text-align:left;margin-top:8px}.filters{grid-template-columns:repeat(2, minmax(0,1fr));}.filters .field:last-of-type{grid-column:auto}.big-num{font-size:34px}.mini-metrics{grid-template-columns:1fr}.panel-head,.panel-body,.card{padding-left:16px;padding-right:16px}.bar-row{grid-template-columns:1fr 80px;gap:8px}.bar-track{grid-column:1 / span 2}.bar-value{grid-row:1;text-align:right}.mobile-hint{display:block}th,td{white-space:nowrap}.card h2{font-size:16px}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="top-inner">
+      <div class="brand-row">
+        <div>
+          <div class="eyebrow">Личный кабинет аптечной сети</div>
+          <h1>Коммерческая аналитика аптечных разговоров</h1>
+        </div>
+        <div class="update">Обновлено: 18 июня 2026, 14:30<br/>Демо-страница для обсуждения продукта</div>
+      </div>
+      <div class="filters">
+        <div class="field"><label>Период</label><select id="period"><option value="7">Последние 7 дней</option><option value="30" selected>Последние 30 дней</option><option value="90">Квартал</option></select></div>
+        <div class="field"><label>Сравнение</label><select id="comparison"><option value="previous" selected>Предыдущий период</option><option value="year">Год к году</option><option value="target">Цель сети</option></select></div>
+        <div class="field"><label>Регион</label><select id="region"></select></div>
+        <div class="field"><label>Формат</label><select id="format"></select></div>
+        <div class="field"><label>Аптека</label><select id="pharmacy"></select></div>
+        <div class="field"><label>Категория</label><select id="category"></select></div>
+        <div class="field"><label>Смена</label><select id="shift"></select></div>
+        <button id="reset">Сбросить</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="main-grid">
+      <article class="panel">
+        <div class="panel-head lost">
+          <div class="title-row">
+            <div>
+              <h2 class="panel-title">Потеряно</h2>
+              <p class="sub">Потенциальная выручка, которую не удалось захватить в выбранном срезе.</p>
+            </div>
+            
+          </div>
+          <div class="big-num" id="lostTotal">—</div>
+          <div class="mini-metrics">
+            <div class="mini"><div class="mini-label">Изменение</div><div class="mini-value" id="lostDelta">—</div><div class="mini-foot" id="lostBaseLabel">—</div></div>
+            <div class="mini"><div class="mini-label">На 100 запросов</div><div class="mini-value" id="lostPer100">—</div><div class="mini-foot">с учетом размера среза</div></div>
+            <div class="mini"><div class="mini-label">Запросов</div><div class="mini-value" id="commercialRequestsL">—</div><div class="mini-foot">запросы клиентов</div></div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="section-title"><h3>Из чего сложились потери</h3><span>выбранный срез</span></div>
+          <div class="bar-list" id="lostBars"></div>
+          <div class="base-line" id="lostExplanation">—</div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head saved">
+          <div class="title-row">
+            <div>
+              <h2 class="panel-title">Сохранено / создано</h2>
+              <p class="sub">Выручка, сохраненная или дополнительно созданная действиями фармацевта.</p>
+            </div>
+            
+          </div>
+          <div class="big-num" id="savedTotal">—</div>
+          <div class="mini-metrics">
+            <div class="mini"><div class="mini-label">Изменение</div><div class="mini-value" id="savedDelta">—</div><div class="mini-foot" id="savedBaseLabel">—</div></div>
+            <div class="mini"><div class="mini-label">На 100 запросов</div><div class="mini-value" id="savedPer100">—</div><div class="mini-foot">с учетом размера среза</div></div>
+            <div class="mini"><div class="mini-label">Запросов</div><div class="mini-value" id="commercialRequestsR">—</div><div class="mini-foot">запросы клиентов</div></div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="section-title"><h3>За счет чего создан эффект</h3><span>выбранный срез</span></div>
+          <div class="bar-list" id="savedBars"></div>
+          <div class="base-line" id="savedExplanation">—</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="cards-grid">
+      <article class="card">
+        <h2>Сигналы по препаратам и категориям</h2>
+        <p>Где пересекаются спрос клиентов, наличие, потери и сохраненная выручка в выбранном срезе. Показывает пересечение спроса, наличия, потерь и сохраненной выручки в выбранном срезе.</p>
+        <div class="mobile-hint">На телефоне таблицу можно прокручивать горизонтально.</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Препарат / категория</th><th class="num">Запросов</th><th class="num">К базе</th><th class="num">Нет в наличии</th><th class="num">Потеряно</th><th class="num">Сохранено</th><th>Паттерн</th></tr></thead>
+            <tbody id="productRows"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Коммерческие действия команды</h2>
+        <p>Не рейтинг людей, а агрегированные действия, которые объясняют левую и правую сторону.</p>
+        <div class="behavior" id="behaviorMetrics"></div>
+      </article>
+    </section>
+
+    <div class="footer-debug" id="debugLine">—</div>
+  </main>
+
+  <script>
+    // ============================================================
+    // 1) Synthetic data architecture
+    // Everything is inside this standalone HTML for GitHub Pages.
+    // The page builds a synthetic event-level fact table in memory.
+    // Filters select a subset of events; every chart/table is grouped
+    // from the selected events, so bars and rankings change naturally.
+    // ============================================================
+
+    const ALL = "Все";
+    const PERIODS = { current: "Текущий период", previous: "Предыдущий период", year: "Тот же период прошлого года" };
+
+    const pharmacies = [
+      {id:"P-104", name:"Аптека №104", region:"Алматы", format:"У больницы", traffic:1.36, quality:.93},
+      {id:"P-087", name:"Аптека №087", region:"Алматы", format:"У дома", traffic:1.08, quality:1.08},
+      {id:"P-019", name:"Аптека №019", region:"Алматы", format:"В ТЦ", traffic:1.18, quality:1.01},
+      {id:"P-056", name:"Аптека №056", region:"Астана", format:"Высокий трафик", traffic:1.22, quality:.98},
+      {id:"P-221", name:"Аптека №221", region:"Шымкент", format:"В ТЦ", traffic:1.02, quality:.91},
+      {id:"P-143", name:"Аптека №143", region:"Регионы", format:"У дома", traffic:.86, quality:.88},
+      {id:"P-177", name:"Аптека №177", region:"Регионы", format:"У больницы", traffic:.92, quality:.84},
+      {id:"P-208", name:"Аптека №208", region:"Астана", format:"У дома", traffic:.97, quality:1.04}
+    ];
+
+    const categories = ["Детские препараты", "Простуда и грипп", "Обезболивающие", "ЖКТ", "Аллергия", "Рецептурные"];
+    const shifts = ["Утро", "День", "Вечер"];
+
+    const products = [
+      {product:"Детский ибупрофен", category:"Детские препараты", price:4200, demand:1.32, stockRisk:.35, season:.38, rx:false},
+      {product:"Детские жаропонижающие", category:"Детские препараты", price:3600, demand:1.10, stockRisk:.30, season:.31, rx:false},
+      {product:"Назальные спреи", category:"Простуда и грипп", price:3100, demand:1.22, stockRisk:.18, season:.22, rx:false},
+      {product:"Средства от кашля", category:"Простуда и грипп", price:2800, demand:1.16, stockRisk:.21, season:.24, rx:false},
+      {product:"Обезболивающие НПВС", category:"Обезболивающие", price:2600, demand:1.05, stockRisk:.14, season:.05, rx:false},
+      {product:"Гели и мази от боли", category:"Обезболивающие", price:3400, demand:.78, stockRisk:.12, season:.02, rx:false},
+      {product:"Пробиотики", category:"ЖКТ", price:5200, demand:.82, stockRisk:.09, season:.00, rx:false},
+      {product:"Средства от изжоги", category:"ЖКТ", price:3800, demand:.90, stockRisk:.10, season:.01, rx:false},
+      {product:"Антигистаминные", category:"Аллергия", price:4300, demand:.95, stockRisk:.16, season:.28, rx:false},
+      {product:"Спреи от аллергии", category:"Аллергия", price:6200, demand:.62, stockRisk:.19, season:.35, rx:false},
+      {product:"Рецептурные антикоагулянты", category:"Рецептурные", price:11800, demand:.34, stockRisk:.16, season:.00, rx:true},
+      {product:"Рецептурные препараты давления", category:"Рецептурные", price:7600, demand:.48, stockRisk:.13, season:.00, rx:true}
+    ];
+
+    const regionProfiles = {
+      "Алматы": {demand:1.16, stock:1.02, priceObjection:.92, upsell:1.12, save:1.08},
+      "Астана": {demand:1.03, stock:.96, priceObjection:.98, upsell:1.03, save:1.06},
+      "Шымкент": {demand:.96, stock:1.06, priceObjection:1.28, upsell:.92, save:.94},
+      "Регионы": {demand:.86, stock:1.24, priceObjection:1.12, upsell:.80, save:.84}
+    };
+
+    const formatProfiles = {
+      "У больницы": {demand:1.08, stock:1.18, replacementGap:1.22, closeGap:.96, upsellGap:.82, saveReplacement:1.22, saveUpsell:.80, value:1.18},
+      "У дома": {demand:.94, stock:.94, replacementGap:.86, closeGap:.88, upsellGap:.95, saveReplacement:1.10, saveUpsell:.96, value:.95},
+      "В ТЦ": {demand:1.03, stock:.88, replacementGap:.92, closeGap:1.16, upsellGap:1.38, saveReplacement:.90, saveUpsell:1.42, value:1.00},
+      "Высокий трафик": {demand:1.18, stock:1.04, replacementGap:1.05, closeGap:1.32, upsellGap:1.20, saveReplacement:.96, saveUpsell:1.05, value:1.06}
+    };
+
+    const shiftProfiles = {
+      "Утро": {demand:.74, quality:1.12, closeGap:.82, upsell:.94},
+      "День": {demand:1.00, quality:1.02, closeGap:1.00, upsell:1.00},
+      "Вечер": {demand:1.28, quality:.88, closeGap:1.26, upsell:1.12}
+    };
+
+    const periodProfiles = {
+      current: {demand:1.05, stock:1.08, quality:.98, season:1.00, upsell:1.02},
+      previous: {demand:1.00, stock:1.00, quality:1.02, season:.94, upsell:1.00},
+      year: {demand:.93, stock:.96, quality:.96, season:.78, upsell:.90}
+    };
+
+    const lostReasons = [
+      "Товара не было в наличии",
+      "Замену не предложили",
+      "Цену не отработали",
+      "Клиент ушел без покупки",
+      "Упущенная допродажа"
+    ];
+    const savedReasons = [
+      "Продажа сохранена заменой",
+      "Предложен доступный аналог",
+      "Сделана допродажа",
+      "Цену отработали",
+      "Переключение на приоритетный SKU"
+    ];
+
+    function mulberry32(a){ return function(){ let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+    const rand = mulberry32(124987);
+    function clamp(x,min,max){return Math.max(min, Math.min(max, x));}
+    function pickWeighted(items, weightFn){ const weights = items.map(weightFn); const total=weights.reduce((a,b)=>a+b,0); let r=rand()*total; for(let i=0;i<items.length;i++){ r-=weights[i]; if(r<=0) return items[i]; } return items[items.length-1]; }
+    function jitter(scale=.12){ return 1 + (rand()-.5)*2*scale; }
+    function poissonish(mean){ const base = Math.max(0, mean*jitter(.35)); return Math.max(1, Math.round(base)); }
+
+    function generateEvents(){
+      const events=[]; let id=1;
+      const periods=["current","previous","year"];
+      periods.forEach(period=>{
+        for(let day=1; day<=90; day++){
+          pharmacies.forEach(ph=>{
+            shifts.forEach(shift=>{
+              products.forEach(prod=>{
+                const reg=regionProfiles[ph.region], fmt=formatProfiles[ph.format], shp=shiftProfiles[shift], pp=periodProfiles[period];
+                const weeklyPulse = 0.88 + 0.22*Math.sin((day + ph.id.charCodeAt(2)) / 6.2);
+                const baseMean = 0.34 * ph.traffic * reg.demand * fmt.demand * shp.demand * prod.demand * pp.demand * weeklyPulse;
+                const seasonalDemand = 1 + (prod.season || 0) * pp.season;
+                const n = poissonish(baseMean * seasonalDemand);
+                for(let k=0;k<n;k++){
+                  const requestValue = prod.price * fmt.value * (prod.rx ? 1.18 : 1) * jitter(.22);
+                  const stockProb = clamp(prod.stockRisk * reg.stock * fmt.stock * pp.stock * (ph.quality<.9?1.06:1), .03, .62);
+                  const productUnavailable = rand() < stockProb;
+
+                  const quality = clamp(ph.quality * shp.quality * pp.quality, .64, 1.26);
+                  const replacementOfferedProb = clamp((productUnavailable ? 0.62 : 0.18) * quality / fmt.replacementGap * reg.save, .12, .90);
+                  const replacementOffered = productUnavailable && rand() < replacementOfferedProb;
+                  const replacementAcceptedProb = clamp(0.66 * quality * reg.save * fmt.saveReplacement * (prod.rx ? .72 : 1), .18, .88);
+                  const replacementAccepted = replacementOffered && rand() < replacementAcceptedProb;
+
+                  const priceObjProb = clamp(0.12 * reg.priceObjection * (prod.price>5000?1.35:1) * (ph.region==="Шымкент"?1.15:1), .03, .46);
+                  const priceObjection = rand() < priceObjProb;
+                  const priceHandledProb = clamp(0.52 * quality / reg.priceObjection, .18, .82);
+                  const priceHandled = priceObjection && rand() < priceHandledProb;
+
+                  const upsellOppProb = clamp((prod.category==="Простуда и грипп"?.46:prod.category==="ЖКТ"?.38:prod.category==="Детские препараты"?.32:.24) * fmt.saveUpsell, .08, .72);
+                  const upsellOpportunity = rand() < upsellOppProb;
+                  const upsellOfferProb = clamp(0.42 * quality * reg.upsell * shp.upsell / fmt.upsellGap * pp.upsell, .06, .76);
+                  const upsellOffered = upsellOpportunity && rand() < upsellOfferProb;
+                  const upsellAccepted = upsellOffered && rand() < clamp(0.58 * quality, .18, .82);
+
+                  const closeProb = clamp(0.76 * quality / fmt.closeGap * (priceObjection && !priceHandled ? .65 : 1), .20, .94);
+                  const saleClosed = (!productUnavailable || replacementAccepted) && rand() < closeProb;
+
+                  let lostReason=null, lostValue=0, savedReason=null, savedValue=0, upsellValue=0;
+
+                  // Loss is not assigned by a fixed priority chain. Several problems can exist in one request;
+                  // we pick the dominant commercial reason with weights that vary by region, format, category and shift.
+                  const lossCandidates = [];
+                  if(productUnavailable){
+                    lossCandidates.push({reason:"Товара не было в наличии", value:requestValue*0.70, w:1.7*reg.stock*fmt.stock*(prod.rx?1.35:1)*(replacementOffered?1.25:.65)});
+                  }
+                  if(productUnavailable && !replacementOffered){
+                    lossCandidates.push({reason:"Замену не предложили", value:requestValue*0.92, w:2.2*fmt.replacementGap*(1/quality)*(prod.rx?.75:1.15)});
+                  }
+                  if(priceObjection && !priceHandled){
+                    lossCandidates.push({reason:"Цену не отработали", value:requestValue*0.58, w:2.4*reg.priceObjection*(prod.price>5000?1.25:1)});
+                  }
+                  if(!saleClosed && (!productUnavailable || replacementOffered)){
+                    lossCandidates.push({reason:"Клиент ушел без покупки", value:requestValue*0.44, w:1.9*fmt.closeGap*shp.closeGap*(ph.format==="Высокий трафик"?1.25:1)});
+                  }
+                  if(upsellOpportunity && !upsellOffered){
+                    lossCandidates.push({reason:"Упущенная допродажа", value:requestValue*(prod.category==="Простуда и грипп"?.26:.18), w:2.2*fmt.upsellGap*(ph.format==="В ТЦ"?1.45:1)*(prod.category==="Простуда и грипп"?1.25:1)});
+                  }
+                  if(lossCandidates.length && rand()<0.72){
+                    const chosenLoss = pickWeighted(lossCandidates, c=>Math.max(.05,c.w));
+                    lostReason = chosenLoss.reason;
+                    lostValue = chosenLoss.value;
+                  }
+
+                  // Saved / created value is also selected from candidate mechanisms, not fixed order.
+                  const savedCandidates = [];
+                  if(replacementAccepted){
+                    savedCandidates.push({reason:"Продажа сохранена заменой", value:requestValue*.94, w:2.0*fmt.saveReplacement*reg.save*(prod.rx?.75:1)});
+                    savedCandidates.push({reason:"Предложен доступный аналог", value:requestValue*.82, w:1.2*reg.save*(prod.rx?.55:1.15)});
+                  }
+                  if(priceHandled && saleClosed){
+                    savedCandidates.push({reason:"Цену отработали", value:requestValue*.58, w:1.8/reg.priceObjection*(ph.region==="Шымкент"?1.35:1)});
+                  }
+                  if(saleClosed && rand()<0.12 && !prod.rx){
+                    savedCandidates.push({reason:"Переключение на приоритетный SKU", value:requestValue*.30, w:1.1*(ph.format==="В ТЦ"?1.4:1)});
+                  }
+                  if(upsellAccepted){
+                    savedCandidates.push({reason:"Сделана допродажа", value:requestValue*(prod.category==="Простуда и грипп"?.30:.21), w:2.3*fmt.saveUpsell*reg.upsell*(ph.format==="В ТЦ"?1.5:1)});
+                    upsellValue = requestValue * (prod.category==="Простуда и грипп"?.18:.13);
+                  }
+                  if(savedCandidates.length){
+                    const chosenSaved = pickWeighted(savedCandidates, c=>Math.max(.05,c.w));
+                    savedReason = chosenSaved.reason;
+                    savedValue = chosenSaved.value;
+                  }
+
+                  // Ensure every event has non-negative values; no NaN allowed.
+                  lostValue = Math.max(0, Math.round(lostValue));
+                  savedValue = Math.max(0, Math.round(savedValue));
+                  upsellValue = Math.max(0, Math.round(upsellValue));
+
+                  events.push({
+                    id:"EVT-"+(id++).toString().padStart(5,"0"), period, day,
+                    region:ph.region, pharmacy_id:ph.id, pharmacy_name:ph.name, format:ph.format,
+                    shift, category:prod.category, product:prod.product, commercial_request:1,
+                    product_unavailable:productUnavailable, replacement_offered:replacementOffered, replacement_accepted:replacementAccepted,
+                    price_objection:priceObjection, price_handled:priceHandled,
+                    upsell_opportunity:upsellOpportunity, upsell_offered:upsellOffered, upsell_accepted:upsellAccepted,
+                    sale_closed:saleClosed,
+                    lost_reason:lostReason, lost_value:lostValue,
+                    saved_reason:savedReason, saved_value:savedValue, upsell_value:upsellValue
+                  });
+                }
+              })
+            })
+          })
+        }
+      });
+      return events;
+    }
+
+    const events = generateEvents();
+
+    // Targets are deterministic network targets, not event rows.
+    const targets = {
+      lostPer100: 42000,
+      savedPer100: 39000,
+      replacementOfferRate: .75,
+      priceHandlingRate: .62,
+      upsellOfferRate: .32,
+      closureRate: .78,
+      clarificationRate: .70
+    };
+
+    // ============================================================
+    // 2) UI helpers and calculations
+    // ============================================================
+    const $ = id => document.getElementById(id);
+    const controls = ["period","comparison","region","format","pharmacy","category","shift"];
+    function uniq(arr){return [...new Set(arr)].sort((a,b)=>a.localeCompare(b,"ru"));}
+    function money(v){ if(!Number.isFinite(v)) return "0 ₸"; const abs=Math.abs(v); if(abs>=1_000_000) return (v/1_000_000).toFixed(abs>=10_000_000?1:1).replace('.',',')+" млн ₸"; if(abs>=1000) return Math.round(v/1000).toLocaleString('ru-RU')+" тыс. ₸"; return Math.round(v).toLocaleString('ru-RU')+" ₸"; }
+    function int(v){ return Math.round(Number.isFinite(v)?v:0).toLocaleString('ru-RU'); }
+    function pct(v){ return (Number.isFinite(v)?v:0).toFixed(0).replace('.',',')+"%"; }
+    function pp(v){ const sign=v>0?"+":""; return sign+(Number.isFinite(v)?v*100:0).toFixed(0).replace('.',',')+" п.п."; }
+    function deltaPct(curr, base){ if(!base || !Number.isFinite(base)) return 0; return (curr-base)/base; }
+    function deltaText(d){ const sign=d>0?"+":""; return sign+(d*100).toFixed(0).replace('.',',')+"%"; }
+    function classForDelta(d, positiveGood=true){ if(Math.abs(d)<.025) return "neutral"; return (positiveGood ? d>0 : d<0) ? "good" : "bad"; }
+    function byId(id){return pharmacies.find(p=>p.id===id)}
+
+    function setupSelect(id, values, selected=ALL){ const el=$(id); el.innerHTML=""; values.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; if(v===selected) o.selected=true; el.appendChild(o); }); }
+
+    function initFilters(){
+      setupSelect('region', [ALL, ...uniq(pharmacies.map(p=>p.region))]);
+      setupSelect('format', [ALL, ...uniq(pharmacies.map(p=>p.format))]);
+      setupSelect('category', [ALL, ...categories]);
+      setupSelect('shift', [ALL, ...shifts]);
+      refreshPharmacyOptions();
+    }
+
+    function currentFilters(){ return Object.fromEntries(controls.map(id=>[id,$(id).value])); }
+
+    function refreshPharmacyOptions(){
+      const region=$('region').value || ALL;
+      const format=$('format').value || ALL;
+      const current=$('pharmacy').value || ALL;
+      const allowed=pharmacies.filter(p=>(region===ALL||p.region===region)&&(format===ALL||p.format===format));
+      const vals=[ALL, ...allowed.map(p=>p.name)];
+      setupSelect('pharmacy', vals, vals.includes(current)?current:ALL);
+    }
+
+    function matches(e, f){
+      const days = Number(f.period || 30);
+      return e.day <= days &&
+        (f.region===ALL || e.region===f.region) &&
+        (f.format===ALL || e.format===f.format) &&
+        (f.pharmacy===ALL || e.pharmacy_name===f.pharmacy) &&
+        (f.category===ALL || e.category===f.category) &&
+        (f.shift===ALL || e.shift===f.shift);
+    }
+
+    function getFiltered(period, filters){ return events.filter(e=>e.period===period && matches(e, filters)); }
+    function sum(arr, fn){ return arr.reduce((a,e)=>a+(typeof fn==='function'?fn(e):(e[fn]||0)),0); }
+    function groupSum(arr, keyFn, valFn){
+      const m=new Map();
+      arr.forEach(e=>{
+        const k=typeof keyFn==='function'?keyFn(e):e[keyFn];
+        if(!k) return;
+        const v=typeof valFn==='function'?valFn(e):(e[valFn]||0);
+        m.set(k,(m.get(k)||0)+v);
+      });
+      return [...m.entries()].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
+    }
+
+    function calc(eventsSubset){
+      const requests=eventsSubset.length;
+      const lostTotal=sum(eventsSubset,'lost_value');
+      const savedTotal=sum(eventsSubset,e=>e.saved_value+e.upsell_value);
+      const lostByReason=groupSum(eventsSubset,'lost_reason','lost_value');
+      const savedByReason=groupSum(eventsSubset,e=>e.saved_reason, e=>e.saved_value+e.upsell_value);
+      return {requests,lostTotal,savedTotal,lostByReason,savedByReason};
+    }
+
+    function calcBaseMetrics(filters, current){
+      if(filters.comparison==='previous') return calc(getFiltered('previous', filters));
+      if(filters.comparison==='year') return calc(getFiltered('year', filters));
+      // Target base: use current requests x target per 100. It is not a real event set.
+      return {
+        requests: current.requests,
+        lostTotal: current.requests * targets.lostPer100 / 100,
+        savedTotal: current.requests * targets.savedPer100 / 100,
+        lostByReason: [], savedByReason: []
+      };
+    }
+
+    function barList(elId, rows, total, type){
+      const el=$(elId); el.innerHTML='';
+      const max=Math.max(...rows.map(r=>r.value), 1);
+      lostReasons.concat(savedReasons).forEach(()=>{});
+      rows.forEach(r=>{
+        const pctWidth = Math.max(4, Math.round(r.value/max*100));
+        const div=document.createElement('div'); div.className='bar-row';
+        div.innerHTML = `<div class="bar-label">${r.name}</div><div class="bar-track"><div class="bar-fill ${type}" style="width:${pctWidth}%"></div></div><div class="bar-value">${money(r.value)}</div>`;
+        el.appendChild(div);
+      });
+      if(!rows.length){
+        const div=document.createElement('div'); div.className='bar-row';
+        div.innerHTML='<div class="bar-label">Нет событий</div><div class="bar-track"><div class="bar-fill '+type+'" style="width:0%"></div></div><div class="bar-value">0 ₸</div>';
+        el.appendChild(div);
+      }
+    }
+
+    function productPattern(row){
+      const unavailableRate=row.requests?row.unavailable/row.requests:0;
+      const saveRatio=row.lost?row.saved/row.lost:row.saved>0?2:0;
+      const delta=row.baseRequests?deltaPct(row.requests,row.baseRequests):0;
+      if(row.requests>=700 && unavailableRate>=.25) return {text:"Высокий спрос + слабое наличие", cls:"red"};
+      if(delta>.20 && row.category!=="ЖКТ") return {text:"Спрос выше базы", cls:"amber"};
+      if(saveRatio>1.0 && unavailableRate<.15) return {text:"Стабильный спрос + сильная конверсия", cls:"green"};
+      if(row.requests<300 && (row.lost/Math.max(row.requests,1))>1800) return {text:"Мало запросов + высокая стоимость случая", cls:"amber"};
+      if(saveRatio>.55 && row.upsellRate<.25) return {text:"Замены работают, допродажи слабые", cls:"amber"};
+      return {text:"Сбалансированный спрос", cls:"green"};
+    }
+
+    function renderProducts(currEvents, baseEvents){
+      const baseByProd = new Map();
+      baseEvents.forEach(e=>{ const k=e.product; const x=baseByProd.get(k)||0; baseByProd.set(k,x+1); });
+      const map=new Map();
+      currEvents.forEach(e=>{
+        const k=e.product; const row=map.get(k)||{product:e.product, category:e.category, requests:0, unavailable:0, lost:0, saved:0, upsellOpp:0, upsellOff:0, baseRequests:baseByProd.get(k)||0};
+        row.requests += 1; row.unavailable += e.product_unavailable?1:0; row.lost += e.lost_value; row.saved += e.saved_value + e.upsell_value; row.upsellOpp += e.upsell_opportunity?1:0; row.upsellOff += e.upsell_offered?1:0;
+        map.set(k,row);
+      });
+      const rows=[...map.values()].sort((a,b)=>(b.lost+b.saved)-(a.lost+a.saved)).slice(0,6);
+      const body=$('productRows'); body.innerHTML='';
+      rows.forEach(r=>{
+        r.upsellRate = r.upsellOpp ? r.upsellOff/r.upsellOpp : 0;
+        const pat=productPattern(r);
+        const d = deltaPct(r.requests, r.baseRequests || r.requests);
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td><div class="product-name">${r.product}</div><div class="product-cat">${r.category}</div></td><td class="num">${int(r.requests)}</td><td class="num"><span class="delta ${classForDelta(d,true)}">${deltaText(d)}</span></td><td class="num">${pct((r.unavailable/Math.max(r.requests,1))*100)}</td><td class="num red">${money(r.lost)}</td><td class="num green">${money(r.saved)}</td><td><span class="pill ${pat.cls}">${pat.text}</span></td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function rate(eventsSubset, numFn, denFn){ const den=eventsSubset.filter(denFn).length; if(!den) return 0; return eventsSubset.filter(e=>denFn(e)&&numFn(e)).length/den; }
+    function behaviorMetrics(currEvents, baseEvents){
+      const metrics=[
+        {name:"Замена предложена при отсутствии товара", curr:rate(currEvents,e=>e.replacement_offered,e=>e.product_unavailable), base:rate(baseEvents,e=>e.replacement_offered,e=>e.product_unavailable), target:targets.replacementOfferRate},
+        {name:"Ценовое возражение отработано", curr:rate(currEvents,e=>e.price_handled,e=>e.price_objection), base:rate(baseEvents,e=>e.price_handled,e=>e.price_objection), target:targets.priceHandlingRate},
+        {name:"Допродажа предложена", curr:rate(currEvents,e=>e.upsell_offered,e=>e.upsell_opportunity), base:rate(baseEvents,e=>e.upsell_offered,e=>e.upsell_opportunity), target:targets.upsellOfferRate},
+        {name:"Покупка состоялась", curr:rate(currEvents,e=>e.sale_closed,e=>true), base:rate(baseEvents,e=>e.sale_closed,e=>true), target:targets.closureRate},
+        {name:"Уточняющие вопросы заданы", curr:clamp(.68 + (rate(currEvents,e=>e.sale_closed,e=>true)-.65)*.45, .38, .86), base:clamp(.68 + (rate(baseEvents,e=>e.sale_closed,e=>true)-.65)*.45, .38, .86), target:targets.clarificationRate}
+      ];
+      const el=$('behaviorMetrics'); el.innerHTML='';
+      metrics.forEach(m=>{
+        const d=m.curr-m.base;
+        const div=document.createElement('div'); div.className='metric-row';
+        div.innerHTML = `<div><div class="metric-title"><span>${m.name}</span><span class="target">цель ${pct(m.target*100)} · <span class="delta ${d>=0?'good':'bad'}">${pp(d)}</span></span></div><div class="progress"><div class="progress-fill" style="width:${Math.round(m.curr*100)}%"></div></div></div><div class="metric-value">${pct(m.curr*100)}</div>`;
+        el.appendChild(div);
+      });
+    }
+
+    function periodName(days){
+      if(Number(days)===7) return '7 дням';
+      if(Number(days)===30) return '30 дням';
+      return 'кварталу';
+    }
+    function comparisonLabel(filters){
+      const days = Number(filters.period || 30);
+      if(filters.comparison==='previous') return days===90 ? 'к предыдущему кварталу' : `к предыдущим ${periodName(days)}`;
+      if(filters.comparison==='year') return days===90 ? 'к этому кварталу год назад' : `к тем же ${periodName(days)} год назад`;
+      return 'к цели сети';
+    }
+
+    function render(){
+      refreshPharmacyOptions();
+      const f=currentFilters();
+      const currEvents=getFiltered('current', f);
+      const curr=calc(currEvents);
+      const base=calcBaseMetrics(f, curr);
+      const baseEvents = f.comparison==='year' ? getFiltered('year', f) : getFiltered('previous', f);
+      const lostD=deltaPct(curr.lostTotal, base.lostTotal);
+      const savedD=deltaPct(curr.savedTotal, base.savedTotal);
+      const lostPer100=curr.lostTotal/Math.max(curr.requests,1)*100;
+      const savedPer100=curr.savedTotal/Math.max(curr.requests,1)*100;
+
+      $('lostTotal').textContent=money(curr.lostTotal);
+      $('savedTotal').textContent=money(curr.savedTotal);
+      $('lostDelta').innerHTML=`<span class="delta ${classForDelta(lostD,false)}">${deltaText(lostD)}</span>`;
+      $('savedDelta').innerHTML=`<span class="delta ${classForDelta(savedD,true)}">${deltaText(savedD)}</span>`;
+      $('lostBaseLabel').textContent=comparisonLabel(f);
+      $('savedBaseLabel').textContent=comparisonLabel(f);
+      $('lostPer100').textContent=money(lostPer100);
+      $('savedPer100').textContent=money(savedPer100);
+      $('commercialRequestsL').textContent=int(curr.requests);
+      $('commercialRequestsR').textContent=int(curr.requests);
+      barList('lostBars', curr.lostByReason, curr.lostTotal, 'lost');
+      barList('savedBars', curr.savedByReason, curr.savedTotal, 'saved');
+      renderProducts(currEvents, baseEvents.length?baseEvents:currEvents);
+      behaviorMetrics(currEvents, baseEvents.length?baseEvents:currEvents);
+      $('debugLine').textContent='';
+    }
+
+    controls.forEach(id=>$(id).addEventListener('change', render));
+    $('region').addEventListener('change', ()=>{ refreshPharmacyOptions(); render(); });
+    $('format').addEventListener('change', ()=>{ refreshPharmacyOptions(); render(); });
+    $('reset').addEventListener('click', ()=>{ $('period').value='30'; $('comparison').value='previous'; $('region').value=ALL; $('format').value=ALL; $('category').value=ALL; $('shift').value=ALL; refreshPharmacyOptions(); $('pharmacy').value=ALL; render(); });
+    initFilters(); render();
+  </script>
+</body>
+</html>
